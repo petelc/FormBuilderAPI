@@ -1,0 +1,3 @@
+﻿ID,Form Number,Form Title,Form Owner Division,Form Owner,Version,Created Date,Revised Date,Configuration Path,Domain
+1,FRM-1000,Form One,Purchasing,Frank Dicotti,1.2.0,2/15/21,3/15/23,../assets/configurations/FRM1000.json,''
+2,FRM-1001,Form Two,Receiving,Nancy Reagan,1.0.0,5/2/01,,./assets/configurations/FRM1001.json,''
