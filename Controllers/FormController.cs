@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq.Dynamic.Core;
 using FormBuilderAPI.DTO;
 using FormBuilderAPI.Models;
+using FormBuilderAPI.Attributes;
 
 namespace FormBuilderAPI.Controllers;
 
@@ -21,37 +22,31 @@ public class FormController : ControllerBase
 
     [HttpGet(Name = "GetForm")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
-    public async Task<RestDTO<Form[]>> GetForm(
-        int pageIndex = 0,
-        int pageSize = 10,
-        string? sortColumn = "FormNumber",
-        string? sortOrder = "ASC",
-        string? filterQuery = null
-        )
+    public async Task<RestDTO<Form[]>> GetForm([FromQuery] RequestDTO input)
     {
         var query = _context.Forms.AsQueryable();
-        if (!string.IsNullOrEmpty(filterQuery))
+        if (!string.IsNullOrEmpty(input.FilterQuery))
         {
             // Assuming filterQuery is a simple string to filter FormNumber
-            query = query.Where(f => f.FormNumber.Contains(filterQuery));
+            query = query.Where(f => f.FormNumber.Contains(input.FilterQuery));
         }
         var recordCount = await query.CountAsync();
 
         query = query
-            .OrderBy($"{sortColumn} {sortOrder}")
-            .Skip(pageIndex * pageSize)
-            .Take(pageSize);
+            .OrderBy($"{input.SortColumn} {input.SortOrder}")
+            .Skip(input.PageIndex * input.PageSize)
+            .Take(input.PageSize);
 
         return new RestDTO<Form[]>
         {
             Data = await query.ToArrayAsync(),
-            PageIndex = pageIndex,
-            PageSize = pageSize,
+            PageIndex = input.PageIndex,
+            PageSize = input.PageSize,
             RecordCount = recordCount,
             Links = new List<LinkDTO>
             {
                 new LinkDTO(
-                    Url.Action(null, "Forms", new { pageIndex, pageSize }, Request.Scheme)!,
+                    Url.Action(null, "Forms", new { pageIndex = input.PageIndex, pageSize = input.PageSize }, Request.Scheme)!,
                     "self",
                     "GET"
                 )
