@@ -12,7 +12,12 @@ public class SortOrderFilter : IOperationProcessor
 {
     public bool Process(OperationProcessorContext context)
     {
-        var attributes = context.MethodInfo.GetCustomAttributes(true).OfType<SortOrderValidatorAttribute>();
+        var attributes = context.MethodInfo.GetCustomAttributes(true)
+                .Union(context.MethodInfo.DeclaringType!.GetProperties()
+                .Where(p => p.Name == context.MethodInfo.Name)
+                .SelectMany(p => p.GetCustomAttributes(true))
+                )
+                .OfType<SortOrderValidatorAttribute>();
         if (attributes != null)
         {
             foreach (var attribute in attributes)

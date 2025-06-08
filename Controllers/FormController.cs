@@ -22,7 +22,7 @@ public class FormController : ControllerBase
 
     [HttpGet(Name = "GetForm")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
-    public async Task<RestDTO<Form[]>> GetForm([FromQuery] RequestDTO input)
+    public async Task<RestDTO<Form[]>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
         var query = _context.Forms.AsQueryable();
         if (!string.IsNullOrEmpty(input.FilterQuery))

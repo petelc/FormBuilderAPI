@@ -1,4 +1,3 @@
-using System;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Contexts;
 using FormBuilderAPI.Attributes;
@@ -10,7 +9,12 @@ public class SortOrderColumnFilter : IOperationProcessor
 {
     public bool Process(OperationProcessorContext context)
     {
-        var attributes = context.MethodInfo.GetCustomAttributes(true).OfType<SortColumnValidatorAttribute>();
+        var attributes = context.MethodInfo.GetCustomAttributes(true)
+                .Union(context.MethodInfo.DeclaringType!.GetProperties()
+                .Where(p => p.Name == context.MethodInfo.Name)
+                .SelectMany(p => p.GetCustomAttributes(true))
+                )
+                .OfType<SortColumnValidatorAttribute>();
         if (attributes != null)
         {
             foreach (var attribute in attributes)

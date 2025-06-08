@@ -1,11 +1,10 @@
-using System;
+using FormBuilderAPI.Attributes;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using FormBuilderAPI.Attributes;
 
 namespace FormBuilderAPI.DTO;
 
-public class RequestDTO<T> : IValidatableObject
+public class RequestDTOv1
 {
     [DefaultValue(0)]
     public int PageIndex { get; set; } = 0;
@@ -22,11 +21,4 @@ public class RequestDTO<T> : IValidatableObject
 
     [DefaultValue(null)]
     public string? FilterQuery { get; set; } = null;
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        var validator = new SortColumnValidatorAttribute(typeof(T));
-        var result = validator.GetValidationResult(SortColumn, validationContext);
-        return (result != null) ? new[] { result } : new ValidationResult[0];
-    }
 }
