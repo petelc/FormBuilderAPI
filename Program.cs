@@ -1,5 +1,7 @@
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Swagger;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NSwag;
@@ -106,6 +108,43 @@ app.UseCors(); // Use the default CORS policy
 
 app.UseAuthorization();
 
-app.MapControllers();
+// Minimal API
+app.MapGet("/error",
+    [EnableCors("AnyOrigin")]
+[ResponseCache(NoStore = true)] (HttpContext context) =>
+    {
+        var exceptionHandler =
+            context.Features.Get<IExceptionHandlerPathFeature>();
+
+        var details = new ProblemDetails();
+        details.Detail = exceptionHandler?.Error.Message;
+        details.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id
+              ?? context.TraceIdentifier;
+        details.Type =
+            "https://tools.ietf.org/html/rfc7231#section-6.6.1";
+        details.Status = StatusCodes.Status500InternalServerError;
+        return Results.Problem(details);
+    });
+
+app.MapGet("/error/test",
+    [EnableCors("AnyOrigin")]
+[ResponseCache(NoStore = true)] () =>
+    { throw new Exception("test"); });
+
+app.MapGet("/cod/test",
+    [EnableCors("AnyOrigin")]
+[ResponseCache(NoStore = true)] () =>
+    Results.Text("<script>" +
+        "window.alert('Your client supports JavaScript!" +
+        "\\r\\n\\r\\n" +
+        $"Server time (UTC): {DateTime.UtcNow.ToString("o")}" +
+        "\\r\\n" +
+        "Client time (UTC): ' + new Date().toISOString());" +
+        "</script>" +
+        "<noscript>Your client does not support JavaScript</noscript>",
+        "text/html"));
+
+app.MapControllers().RequireCors("AnyOrigin");
 
 app.Run();
