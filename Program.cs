@@ -1,17 +1,26 @@
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Swagger;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NSwag;
-using NSwag.AspNetCore;
-using SwaggerThemes;
-using Microsoft.AspNetCore.Builder;
-//using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.ModelBindingMessageProvider.SetValueIsInvalidAccessor(
+        (x) => $"The value {x} is not valid.");
+    options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
+        (x) => $"The value for {x} must be a number.");
+    options.ModelBindingMessageProvider.SetAttemptedValueIsInvalidAccessor(
+        (x, y) => $"The value '{x}' is not valid for {y}.");
+    options.ModelBindingMessageProvider.SetMissingBindRequiredValueAccessor(
+        (x) => $"A value for the '{x}' parameter or property was not provided.");
+});
+
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApiDocument(options =>
 {
@@ -62,6 +71,11 @@ builder.Services.AddCors(options =>
         });
 });
 
+// builder.Services.Configure<ApiBehaviorOptions>(options =>
+// {
+//     options.SuppressModelStateInvalidFilter = true;
+// });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -72,10 +86,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUi();
     app.UseDeveloperExceptionPage();
 }
-else
-{
-    app.UseExceptionHandler("/error");
-}
+
 
 if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
 {

@@ -22,8 +22,29 @@ public class FormController : ControllerBase
 
     [HttpGet(Name = "GetForm")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
-    public async Task<RestDTO<Form[]>> GetForm([FromQuery] RequestDTO<FormDTO> input)
+    [ManualValidationFilter]
+    public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
+        if (!ModelState.IsValid)
+        {
+            var details = new ValidationProblemDetails(ModelState);
+
+            details.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+
+            if (ModelState.Keys.Any(k => k == "PageSize"))
+            {
+                details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.2";
+                details.Status = StatusCodes.Status501NotImplemented;
+                return StatusCode(StatusCodes.Status501NotImplemented, details);
+            }
+            else
+            {
+                details.Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1";
+                details.Status = StatusCodes.Status400BadRequest;
+                return BadRequest(details);
+            }
+        }
+
         var query = _context.Forms.AsQueryable();
         if (!string.IsNullOrEmpty(input.FilterQuery))
         {
@@ -52,6 +73,7 @@ public class FormController : ControllerBase
                 )
             },
         };
+
     }
 
     /// <summary>
