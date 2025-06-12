@@ -1,12 +1,18 @@
+using FormBuilderAPI.Constants;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Swagger;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 using NSwag;
 
+
+
+
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 
@@ -20,6 +26,15 @@ builder.Services.AddControllers(options =>
         (x, y) => $"The value '{x}' is not valid for {y}.");
     options.ModelBindingMessageProvider.SetMissingBindRequiredValueAccessor(
         (x) => $"A value for the '{x}' parameter or property was not provided.");
+    options.CacheProfiles.Add("NoCache", new CacheProfile
+    {
+        NoStore = true,
+    });
+    options.CacheProfiles.Add("Any-60", new CacheProfile
+    {
+        Location = ResponseCacheLocation.Any,
+        Duration = 60,
+    });
 });
 
 
@@ -100,15 +115,26 @@ else
 }
 
 
-
-
 app.UseHttpsRedirection();
 
 app.UseCors(); // Use the default CORS policy
 
 app.UseAuthorization();
 
+app.Use((context, next) =>
+{
+    context.Response.GetTypedHeaders().CacheControl =
+        new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+        {
+            NoStore = true,
+            NoCache = true,
+        };
+    return next.Invoke();
+});
+
 // Minimal API
+
+// Error handling endpoint
 app.MapGet("/error",
     [EnableCors("AnyOrigin")]
 [ResponseCache(NoStore = true)] (HttpContext context) =>
@@ -124,14 +150,20 @@ app.MapGet("/error",
         details.Type =
             "https://tools.ietf.org/html/rfc7231#section-6.6.1";
         details.Status = StatusCodes.Status500InternalServerError;
+
+        app.Logger.LogError(CustomLogEvents.Error_Get, exceptionHandler?.Error,
+            "An unhandled exception has occurred while executing the request.");
+
         return Results.Problem(details);
     });
 
+// Test Error endpoint
 app.MapGet("/error/test",
     [EnableCors("AnyOrigin")]
 [ResponseCache(NoStore = true)] () =>
     { throw new Exception("test"); });
 
+// Test JavaScript support endpoint
 app.MapGet("/cod/test",
     [EnableCors("AnyOrigin")]
 [ResponseCache(NoStore = true)] () =>
@@ -145,6 +177,24 @@ app.MapGet("/cod/test",
         "<noscript>Your client does not support JavaScript</noscript>",
         "text/html"));
 
+// Caching endpoint
+app.MapGet("/cache/test/1",
+    [EnableCors("AnyOrigin")]
+(HttpContext context) =>
+    {
+        return Results.Ok();
+    });
+
+app.MapGet("/cache/test/2",
+    [EnableCors("AnyOrigin")]
+(HttpContext context) =>
+    {
+        return Results.Ok();
+    });
+
 app.MapControllers().RequireCors("AnyOrigin");
 
 app.Run();
+
+
+

@@ -4,6 +4,8 @@ using System.Linq.Dynamic.Core;
 using FormBuilderAPI.DTO;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Attributes;
+using FormBuilderAPI.Constants;
+using Serilog;
 
 namespace FormBuilderAPI.Controllers;
 
@@ -11,20 +13,28 @@ namespace FormBuilderAPI.Controllers;
 [ApiController]
 public class FormController : ControllerBase
 {
+    static int _callCount;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<FormController> _logger;
+
+
     public FormController(ILogger<FormController> logger, ApplicationDbContext context)
     {
         _context = context;
         _logger = logger;
+
     }
 
 
     [HttpGet(Name = "GetForm")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
+    [ResponseCache(CacheProfileName = "Any-60")]
     [ManualValidationFilter]
     public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
+        _logger.LogInformation("Hello, world!");
+
+        //_diagnosticContext.Set("IndexCallCount", Interlocked.Increment(ref _callCount));
+
         if (!ModelState.IsValid)
         {
             var details = new ValidationProblemDetails(ModelState);

@@ -21,12 +21,17 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.4.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.4.7" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
+    <PackageReference Include="Serilog.Settings.AppSettings" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.SQLite" Version="6.0.0" />
     <PackageReference Include="SwaggerThemes" Version="1.0.5" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.5" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Assets/" />
+    <Folder Include="Logs/" />
   </ItemGroup>
 
 </Project>
