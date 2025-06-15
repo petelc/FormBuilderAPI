@@ -4,6 +4,8 @@ using System.Linq.Dynamic.Core;
 using FormBuilderAPI.DTO;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Attributes;
+using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
 
 namespace FormBuilderAPI.Controllers;
 
@@ -11,20 +13,29 @@ namespace FormBuilderAPI.Controllers;
 [ApiController]
 public class FormController : ControllerBase
 {
+    static int _callCount;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<FormController> _logger;
-    public FormController(ILogger<FormController> logger, ApplicationDbContext context)
+    private readonly IMemoryCache _cache;
+
+    public FormController(ILogger<FormController> logger, ApplicationDbContext context, IMemoryCache cache)
     {
         _context = context;
         _logger = logger;
+        _cache = cache;
+
     }
 
 
     [HttpGet(Name = "GetForm")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
+    [ResponseCache(CacheProfileName = "Any-60")]
     [ManualValidationFilter]
     public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
+        _logger.LogInformation("Hello, world!");
+
+        //_diagnosticContext.Set("IndexCallCount", Interlocked.Increment(ref _callCount));
+
         if (!ModelState.IsValid)
         {
             var details = new ValidationProblemDetails(ModelState);
@@ -53,14 +64,32 @@ public class FormController : ControllerBase
         }
         var recordCount = await query.CountAsync();
 
-        query = query
-            .OrderBy($"{input.SortColumn} {input.SortOrder}")
-            .Skip(input.PageIndex * input.PageSize)
-            .Take(input.PageSize);
+        Form[]? result = null;
+
+        var cacheKey = $"forms_{input.GetType()}-{JsonSerializer.Serialize(input)}";
+
+        if (!_cache.TryGetValue<Form[]>(cacheKey, out result))
+        {
+            _logger.LogInformation("Cache miss for key {CacheKey}", cacheKey);
+
+            query = query
+                .OrderBy($"{input.SortColumn} {input.SortOrder}")
+                .Skip(input.PageIndex * input.PageSize)
+                .Take(input.PageSize);
+
+            result = await query.ToArrayAsync();
+
+            _cache.Set(cacheKey, result, new TimeSpan(0, 0, 30));
+        }
+        else
+        {
+            _logger.LogInformation("Cache hit for key {CacheKey}", cacheKey);
+        }
+
 
         return new RestDTO<Form[]>
         {
-            Data = await query.ToArrayAsync(),
+            Data = result!,
             PageIndex = input.PageIndex,
             PageSize = input.PageSize,
             RecordCount = recordCount,

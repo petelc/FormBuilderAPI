@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Chrome against localhost",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:${env:PORT||7213}",
+      "webRoot": "${workspaceFolder}"
+    }
+  ],
+  "serverReadyAction": {
+    "action": "openExternally",
+    "pattern": "\\\\bNow listening on:\\\\s+(https?://\\\\ S+)",
+    "uriFormat": "%s/swagger"
+  }
+}
