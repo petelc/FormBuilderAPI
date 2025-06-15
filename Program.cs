@@ -5,14 +5,9 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 using NSwag;
 
-
-
-
 var builder = WebApplication.CreateBuilder(args);
-
 
 // Add services to the container.
 
@@ -88,10 +83,13 @@ builder.Services.AddCors(options =>
         });
 });
 
-// builder.Services.Configure<ApiBehaviorOptions>(options =>
-// {
-//     options.SuppressModelStateInvalidFilter = true;
-// });
+builder.Services.AddResponseCaching(options =>
+{
+    options.MaximumBodySize = 32 * 1024 * 1024;
+    options.SizeLimit = 50 * 1024 * 1024;
+});
+
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -118,6 +116,7 @@ else
 app.UseHttpsRedirection();
 
 app.UseCors(); // Use the default CORS policy
+app.UseResponseCaching();
 
 app.UseAuthorization();
 
