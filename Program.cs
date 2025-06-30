@@ -9,6 +9,10 @@ using NSwag;
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Constants;
+using Microsoft.OpenApi.Models;
+using System.ComponentModel;
+using NSwag.Generation.Processors.Security;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +45,7 @@ builder.Services.AddOpenApiDocument(options =>
 {
     options.PostProcess = document =>
     {
-        document.Info = new OpenApiInfo
+        document.Info = new NSwag.OpenApiInfo
         {
             Version = "v1",
             Title = "FormBuilder API",
@@ -59,6 +63,16 @@ builder.Services.AddOpenApiDocument(options =>
             }
         };
     };
+    options.AddSecurity("Bearer", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
+    {
+        Description = "My Authentication",
+        Name = "Authorization",
+        In = NSwag.OpenApiSecurityApiKeyLocation.Header,
+        Type = NSwag.OpenApiSecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("Bearer"));
     options.OperationProcessors.Add(new SortOrderFilter());
     options.OperationProcessors.Add(new SortOrderColumnFilter());
 });
@@ -226,6 +240,14 @@ app.MapGet("/cache/test/2",
 (HttpContext context) =>
     {
         return Results.Ok();
+    });
+
+app.MapGet("/auth/test/1",
+    [Authorize]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("You are authorized!");
     });
 
 app.MapControllers().RequireCors("AnyOrigin");

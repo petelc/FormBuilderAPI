@@ -4,29 +4,41 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Models.CSV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FormBuilderAPI.Controllers;
 
-[Route("api/[controller]")]
+[Authorize]
+[Route("api/[controller]/[action]")]
 [ApiController]
 public class SeedController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<SeedController> _logger;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly UserManager<ApiUser> _userManager;
 
-    public SeedController(ILogger<SeedController> logger, ApplicationDbContext context, IWebHostEnvironment env)
+    public SeedController(
+        ILogger<SeedController> logger,
+        ApplicationDbContext context,
+        IWebHostEnvironment env,
+        RoleManager<IdentityRole> roleManager,
+        UserManager<ApiUser> userManager)
     {
         _context = context;
         _logger = logger;
+        _roleManager = roleManager;
+        _userManager = userManager;
         _env = env;
     }
 
-    [HttpPut(Name = "Seed")]
-    [ResponseCache(NoStore = true)]
-    public async Task<IActionResult> Put()
+    [HttpPut]
+    [ResponseCache(CacheProfileName = "NoCache")]
+    public async Task<IActionResult> FormData()
     {
         // SETUP
         var config = new CsvConfiguration(CultureInfo.GetCultureInfo("en-US"))
@@ -112,6 +124,13 @@ public class SeedController : ControllerBase
             Domains = _context.Domains.Count(),
             SkippedRows = skippedRows
         });
+    }
+
+    [HttpPost]
+    [ResponseCache(CacheProfileName = "NoCache")]
+    public async Task<IActionResult> AuthData()
+    {
+        throw new NotImplementedException("This method is not implemented yet.");
     }
 
 }

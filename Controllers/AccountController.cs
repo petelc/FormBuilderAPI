@@ -1,8 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using FormBuilderAPI.DTO;
 using FormBuilderAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FormBuilderAPI.Controllers
 {
@@ -75,22 +78,37 @@ namespace FormBuilderAPI.Controllers
 
         [HttpPost]
         [ResponseCache(CacheProfileName = "NoCache")]
-        public async Task<IActionResult> Login(LoginDTO input)
+        public async Task<ActionResult> Login(LoginDTO input)
         {
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var result = await _signInManager.PasswordSignInAsync(input.UserName, input.Password, isPersistent: false, lockoutOnFailure: false);
-                    if (result.Succeeded)
+                    var user = await _userManager.FindByNameAsync(input.UserName!);
+                    if (user == null || !await _userManager.CheckPasswordAsync(user, input.Password!))
                     {
-                        _logger.LogInformation("User {userName} logged in successfully.", input.UserName);
-                        return Ok("Login successful.");
+                        throw new Exception("Invalid username or password.");
                     }
                     else
                     {
-                        _logger.LogWarning("User {userName} failed to log in.", input.UserName);
-                        return Unauthorized("Invalid login attempt.");
+                        var signingCredentials = new SigningCredentials(
+                            new SymmetricSecurityKey(
+                                System.Text.Encoding.UTF8.GetBytes(_configuration["Jwt:SigningKey"]!)),
+                                SecurityAlgorithms.HmacSha256);
+
+                        var claims = new List<Claim>();
+                        claims.Add(new Claim(ClaimTypes.Name, user.UserName!));
+
+                        var jwtObject = new JwtSecurityToken(
+                            issuer: _configuration["Jwt:Issuer"],
+                            audience: _configuration["Jwt:Audience"],
+                            claims: claims,
+                            expires: DateTime.Now.AddSeconds(300),
+                            signingCredentials: signingCredentials);
+
+                        var jwtString = new JwtSecurityTokenHandler().WriteToken(jwtObject);
+
+                        return StatusCode(StatusCodes.Status200OK, jwtString);
                     }
                 }
                 else
@@ -108,9 +126,9 @@ namespace FormBuilderAPI.Controllers
                 {
                     Detail = ex.Message,
                     Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-                    Status = StatusCodes.Status500InternalServerError
+                    Status = StatusCodes.Status401Unauthorized
                 };
-                return StatusCode(StatusCodes.Status500InternalServerError, exceptionDetails);
+                return StatusCode(StatusCodes.Status401Unauthorized, exceptionDetails);
             }
         }
     }
