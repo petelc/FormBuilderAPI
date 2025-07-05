@@ -250,6 +250,30 @@ app.MapGet("/auth/test/1",
         return Results.Ok("You are authorized!");
     });
 
+app.MapGet("/auth/test/2",
+    [Authorize(Roles = RoleNames.Moderator)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Moderator, you are authorized!");
+    });
+
+app.MapGet("/auth/test/3",
+    [Authorize(Roles = RoleNames.Administrator)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Administrator, you are authorized!");
+    });
+
+app.MapGet("/auth/test/4",
+    [Authorize(Roles = RoleNames.SuperAdmin)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Super Administrator, you are authorized!");
+    });
+
 app.MapControllers().RequireCors("AnyOrigin");
 
 app.Run();

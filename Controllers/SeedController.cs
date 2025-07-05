@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
+using FormBuilderAPI.Constants;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Models.CSV;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FormBuilderAPI.Controllers;
 
-[Authorize]
+[Authorize(Roles = RoleNames.Administrator)]
 [Route("api/[controller]/[action]")]
 [ApiController]
 public class SeedController : ControllerBase
@@ -130,7 +131,58 @@ public class SeedController : ControllerBase
     [ResponseCache(CacheProfileName = "NoCache")]
     public async Task<IActionResult> AuthData()
     {
-        throw new NotImplementedException("This method is not implemented yet.");
+        int rolesCreated = 0;
+        int usersAddedToRoles = 0;
+
+        if (!await _roleManager.RoleExistsAsync(RoleNames.Moderator))
+        {
+
+            await _roleManager.CreateAsync(new IdentityRole(RoleNames.Moderator));
+            rolesCreated++;
+        }
+
+        if (!await _roleManager.RoleExistsAsync(RoleNames.Administrator))
+        {
+            await _roleManager.CreateAsync(new IdentityRole(RoleNames.Administrator));
+            rolesCreated++;
+        }
+
+        if (!await _roleManager.RoleExistsAsync(RoleNames.SuperAdmin))
+        {
+            await _roleManager.CreateAsync(new IdentityRole(RoleNames.SuperAdmin));
+            rolesCreated++;
+        }
+
+        var testModerator = await _userManager.FindByNameAsync("TestModerator");
+        if (testModerator != null && !await _userManager.IsInRoleAsync(testModerator, RoleNames.Moderator))
+        {
+            await _userManager.AddToRoleAsync(testModerator, RoleNames.Moderator);
+            usersAddedToRoles++;
+        }
+
+        var testAdmin = await _userManager.FindByNameAsync("TestAdministrator");
+        if (testAdmin != null && !await _userManager.IsInRoleAsync(testAdmin, RoleNames.Administrator))
+        {
+            await _userManager.AddToRoleAsync(testAdmin, RoleNames.Moderator);
+            await _userManager.AddToRoleAsync(testAdmin, RoleNames.Administrator);
+            usersAddedToRoles++;
+        }
+
+        var testSuperAdmin = await _userManager.FindByNameAsync("TestSuperAdmin");
+        if (testSuperAdmin != null && !await _userManager.IsInRoleAsync(testSuperAdmin, RoleNames.SuperAdmin))
+        {
+            await _userManager.AddToRoleAsync(testSuperAdmin, RoleNames.Moderator);
+            await _userManager.AddToRoleAsync(testSuperAdmin, RoleNames.Administrator);
+            await _userManager.AddToRoleAsync(testSuperAdmin, RoleNames.SuperAdmin);
+            usersAddedToRoles++;
+        }
+
+
+        return new JsonResult(new
+        {
+            RolesCreated = rolesCreated,
+            UsersAddedToRoles = usersAddedToRoles
+        });
     }
 
 }

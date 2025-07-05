@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FormBuilderAPI.DTO;
 using FormBuilderAPI.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -98,6 +97,9 @@ namespace FormBuilderAPI.Controllers
 
                         var claims = new List<Claim>();
                         claims.Add(new Claim(ClaimTypes.Name, user.UserName!));
+                        claims.AddRange(
+                            (await _userManager.GetRolesAsync(user))
+                            .Select(r => new Claim(ClaimTypes.Role, r)));
 
                         var jwtObject = new JwtSecurityToken(
                             issuer: _configuration["Jwt:Issuer"],
