@@ -6,6 +6,8 @@ using FormBuilderAPI.Models;
 using FormBuilderAPI.Attributes;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using FormBuilderAPI.Constants;
 
 namespace FormBuilderAPI.Controllers;
 
@@ -13,7 +15,6 @@ namespace FormBuilderAPI.Controllers;
 [ApiController]
 public class FormController : ControllerBase
 {
-    static int _callCount;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<FormController> _logger;
     private readonly IMemoryCache _cache;
@@ -110,6 +111,7 @@ public class FormController : ControllerBase
     /// </summary>
     /// <param name="formDto"></param>
     /// <returns>A new RestDTO containing form data</returns>
+    [Authorize(Roles = RoleNames.Moderator)]
     [HttpPost(Name = "CreateForm")]
     [ResponseCache(NoStore = true)]
     public async Task<RestDTO<Form?>> CreateForm(FormDTO formDto)
@@ -153,6 +155,7 @@ public class FormController : ControllerBase
     /// </summary>
     /// <param name="formDto">Form DTO object</param>
     /// <returns>Status Code 200 if successful, 404 if not found</returns>  
+    [Authorize(Roles = RoleNames.Moderator)]
     [HttpPut(Name = "UpdateForm")]
     [ResponseCache(NoStore = true)]
     public async Task<RestDTO<Form?>> UpdateForm(FormDTO formDto)
@@ -208,6 +211,7 @@ public class FormController : ControllerBase
         };
     }
 
+    [Authorize(Roles = RoleNames.Administrator)]
     [HttpDelete(Name = "DeleteForm")]
     [ResponseCache(NoStore = true)]
     public async Task<RestDTO<Form?>> DeleteForm(int id)

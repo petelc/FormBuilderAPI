@@ -1,11 +1,18 @@
-using FormBuilderAPI.Constants;
-using FormBuilderAPI.Models;
-using FormBuilderAPI.Swagger;
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using NSwag;
+using FormBuilderAPI.Swagger;
+using FormBuilderAPI.Models;
+using FormBuilderAPI.Constants;
+using Microsoft.OpenApi.Models;
+using System.ComponentModel;
+using NSwag.Generation.Processors.Security;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +45,7 @@ builder.Services.AddOpenApiDocument(options =>
 {
     options.PostProcess = document =>
     {
-        document.Info = new OpenApiInfo
+        document.Info = new NSwag.OpenApiInfo
         {
             Version = "v1",
             Title = "FormBuilder API",
@@ -56,6 +63,16 @@ builder.Services.AddOpenApiDocument(options =>
             }
         };
     };
+    options.AddSecurity("Bearer", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
+    {
+        Description = "My Authentication",
+        Name = "Authorization",
+        In = NSwag.OpenApiSecurityApiKeyLocation.Header,
+        Type = NSwag.OpenApiSecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("Bearer"));
     options.OperationProcessors.Add(new SortOrderFilter());
     options.OperationProcessors.Add(new SortOrderColumnFilter());
 });
@@ -63,6 +80,39 @@ builder.Services.AddOpenApiDocument(options =>
 // Configure Entity Framework Core with SQLite
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Identity services
+builder.Services.AddIdentity<ApiUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 12;
+})
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JWT:Issuer"],
+        ValidAudience = builder.Configuration["JWT:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"]!))
+    };
+});
 
 // Define CORS policy
 builder.Services.AddCors(options =>
@@ -118,6 +168,7 @@ app.UseHttpsRedirection();
 app.UseCors(); // Use the default CORS policy
 app.UseResponseCaching();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.Use((context, next) =>
@@ -189,6 +240,38 @@ app.MapGet("/cache/test/2",
 (HttpContext context) =>
     {
         return Results.Ok();
+    });
+
+app.MapGet("/auth/test/1",
+    [Authorize]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("You are authorized!");
+    });
+
+app.MapGet("/auth/test/2",
+    [Authorize(Roles = RoleNames.Moderator)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Moderator, you are authorized!");
+    });
+
+app.MapGet("/auth/test/3",
+    [Authorize(Roles = RoleNames.Administrator)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Administrator, you are authorized!");
+    });
+
+app.MapGet("/auth/test/4",
+    [Authorize(Roles = RoleNames.SuperAdmin)]
+[EnableCors("AnyOrigin")]
+[ResponseCacheAttribute(NoStore = true)] () =>
+    {
+        return Results.Ok("Hey Super Administrator, you are authorized!");
     });
 
 app.MapControllers().RequireCors("AnyOrigin");
