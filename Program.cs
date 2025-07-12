@@ -1,18 +1,19 @@
+using NSwag;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using NSwag;
+using Microsoft.AspNetCore.Authorization;
+using NSwag.Generation.Processors.Security;
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Constants;
-using Microsoft.OpenApi.Models;
-using System.ComponentModel;
-using NSwag.Generation.Processors.Security;
-using Microsoft.AspNetCore.Authorization;
+using FormBuilderAPI.GraphQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +82,15 @@ builder.Services.AddOpenApiDocument(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Add GraphQL services
+builder.Services.AddGraphQLServer()
+    .AddAuthorization()
+    .AddQueryType<Query>()
+    .AddMutationType<Mutation>()
+    .AddProjections()
+    .AddFiltering()
+    .AddSorting();
+
 // Identity services
 builder.Services.AddIdentity<ApiUser, IdentityRole>(options =>
 {
@@ -141,6 +151,9 @@ builder.Services.AddResponseCaching(options =>
 
 builder.Services.AddMemoryCache();
 
+
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -170,6 +183,8 @@ app.UseResponseCaching();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGraphQL();
 
 app.Use((context, next) =>
 {

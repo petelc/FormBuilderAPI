@@ -1,5 +1,5 @@
 using FormBuilderAPI.Attributes;
-using System.ComponentModel;
+using DefaultValueAttribute = System.ComponentModel.DefaultValueAttribute;
 using System.ComponentModel.DataAnnotations;
 
 namespace FormBuilderAPI.DTO;

@@ -24,7 +24,6 @@ public class FormController : ControllerBase
         _context = context;
         _logger = logger;
         _cache = cache;
-
     }
 
 
@@ -34,8 +33,6 @@ public class FormController : ControllerBase
     public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
         _logger.LogInformation("Hello, world!");
-
-        //_diagnosticContext.Set("IndexCallCount", Interlocked.Increment(ref _callCount));
 
         if (!ModelState.IsValid)
         {
