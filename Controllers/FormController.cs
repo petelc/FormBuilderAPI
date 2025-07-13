@@ -8,6 +8,8 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using FormBuilderAPI.Constants;
+using NSwag.Annotations;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace FormBuilderAPI.Controllers;
 
@@ -31,6 +33,14 @@ public class FormController : ControllerBase
     [HttpGet(Name = "GetForm")]
     [ResponseCache(CacheProfileName = "Any-60")]
     [ManualValidationFilter]
+    [OpenApiOperation(
+    "Retrieves a list of forms",
+    "Returns a paginated list of forms based on the provided filter and sorting options."
+    )]
+    [SwaggerResponse(typeof(RestDTO<Form[]>))]
+    [SwaggerResponse(StatusCodes.Status200OK, typeof(RestDTO<Form[]>), Description = "JSON array of forms")]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, typeof(ValidationProblemDetails), Description = "Invalid input data")]
+    [SwaggerResponse(StatusCodes.Status501NotImplemented, typeof(ValidationProblemDetails), Description = "Unsupported operation")]
     public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
         _logger.LogInformation("Hello, world!");
@@ -114,6 +124,10 @@ public class FormController : ControllerBase
     [Authorize(Roles = RoleNames.Moderator)]
     [HttpPost(Name = "CreateForm")]
     [ResponseCache(NoStore = true)]
+    [SwaggerResponse(StatusCodes.Status201Created, typeof(RestDTO<Form?>), Description = "Form created successfully")]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, typeof(ValidationProblemDetails), Description = "Invalid input data")]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, typeof(ProblemDetails), Description = "Internal server error")]
+
     public async Task<RestDTO<Form?>> CreateForm(FormDTO formDto)
     {
         var form = new Form
@@ -158,6 +172,10 @@ public class FormController : ControllerBase
     [Authorize(Roles = RoleNames.Moderator)]
     [HttpPut(Name = "UpdateForm")]
     [ResponseCache(NoStore = true)]
+    [SwaggerResponse(StatusCodes.Status200OK, typeof(RestDTO<Form?>), Description = "Form updated successfully")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, typeof(ProblemDetails), Description = "Form not found")]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, typeof(ValidationProblemDetails), Description = "Invalid input data")]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, typeof(ProblemDetails), Description = "Internal server error")]
     public async Task<RestDTO<Form?>> UpdateForm(FormDTO formDto)
     {
         var form = await _context.Forms
@@ -214,6 +232,12 @@ public class FormController : ControllerBase
     [Authorize(Roles = RoleNames.Administrator)]
     [HttpDelete(Name = "DeleteForm")]
     [ResponseCache(NoStore = true)]
+    [OpenApiOperation(
+        "Deletes a form",
+        "Deletes the specified form by ID.")]
+    [SwaggerResponse(StatusCodes.Status200OK, typeof(RestDTO<Form?>), Description = "Form deleted successfully")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, typeof(ProblemDetails), Description = "Form not found")]
+    [SwaggerResponse(StatusCodes.Status500InternalServerError, typeof(ProblemDetails), Description = "Internal server error")]
     public async Task<RestDTO<Form?>> DeleteForm(int id)
     {
         var form = await _context.Forms.FindAsync(id);

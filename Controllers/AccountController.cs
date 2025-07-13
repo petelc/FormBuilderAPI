@@ -32,8 +32,19 @@ namespace FormBuilderAPI.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Registers a new user.
+        /// </summary>
+        /// <param name="input">A DTO containing user data</param>
+        /// <returns>A 201 Created response if registration is successful.</returns>
+        /// <response code="201">User created successfully.</response>
+        /// <response code="400">Invalid input data.</response>
+        /// <response code="500">Internal server error.</response>
         [HttpPost]
         [ResponseCache(CacheProfileName = "NoCache")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Register(RegisterDTO input)
         {
             try
@@ -75,8 +86,19 @@ namespace FormBuilderAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Performs user login
+        /// </summary>
+        /// <param name="input">A DTO containing user's credentials</param>
+        /// <returns>The Bearer token (in JWT format)</returns>
+        /// <response code="200">Login successful, returns JWT token.</response>
+        /// <response code="400">Login failed (bad request)</response>
+        /// <response code="401">Login failed (Unauthorized)</response>
         [HttpPost]
         [ResponseCache(CacheProfileName = "NoCache")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> Login(LoginDTO input)
         {
             try

@@ -1,3 +1,4 @@
+using NSwag.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
@@ -5,14 +6,13 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using NSwag;
+using Microsoft.AspNetCore.Authorization;
+using NSwag.Annotations;
+
+using NSwag.Generation.Processors.Security;
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Constants;
-using Microsoft.OpenApi.Models;
-using System.ComponentModel;
-using NSwag.Generation.Processors.Security;
-using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,26 +47,28 @@ builder.Services.AddOpenApiDocument(options =>
     {
         document.Info = new NSwag.OpenApiInfo
         {
-            Version = "v1",
+            Version = "FormBuilder v1",
             Title = "FormBuilder API",
             Description = "An ASP.NET Core Web API for the form builder application",
             TermsOfService = "https://example.com/terms",
             Contact = new NSwag.OpenApiContact
             {
-                Name = "Example Contact",
+                Name = "Peter Carroll",
                 Url = "https://example.com/contact"
             },
             License = new NSwag.OpenApiLicense
             {
-                Name = "Example License",
+                Name = "FormBuilder License",
                 Url = "https://example.com/license"
             }
         };
+
+
     };
     options.AddSecurity("Bearer", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
     {
-        Description = "My Authentication",
-        Name = "Authorization",
+        Description = "FormBuilder Authentication",
+        Name = "FB-Authorization",
         In = NSwag.OpenApiSecurityApiKeyLocation.Header,
         Type = NSwag.OpenApiSecuritySchemeType.Http,
         Scheme = "bearer",
@@ -75,6 +77,7 @@ builder.Services.AddOpenApiDocument(options =>
     options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("Bearer"));
     options.OperationProcessors.Add(new SortOrderFilter());
     options.OperationProcessors.Add(new SortOrderColumnFilter());
+    options.DocumentProcessors.Add(new CustomDocumentFilter());
 });
 
 // Configure Entity Framework Core with SQLite
@@ -148,7 +151,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseOpenApi();
     //app.MapScalarApiReference();
-    app.UseSwaggerUi();
+    app.UseSwaggerUi(config =>
+    {
+        config.DocExpansion = "list"; // or "full" or "none"
+    });
     app.UseDeveloperExceptionPage();
 }
 
@@ -245,6 +251,12 @@ app.MapGet("/cache/test/2",
 app.MapGet("/auth/test/1",
     [Authorize]
 [EnableCors("AnyOrigin")]
+[OpenApiOperation(
+    "Auth Test #1 - Authorized User",
+    "Returns 200 - Ok if called by an authorized user.",
+    "Auth"
+)]
+[SwaggerResponse(200, typeof(string), Description = "Authorized user")]
 [ResponseCacheAttribute(NoStore = true)] () =>
     {
         return Results.Ok("You are authorized!");

@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FormBuilderAPI.Controllers;
 
 [Authorize(Roles = RoleNames.Administrator)]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("api/[controller]/[action]")]
 [ApiController]
 public class SeedController : ControllerBase
