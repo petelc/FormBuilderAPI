@@ -13,8 +13,12 @@ using NSwag.Generation.Processors.Security;
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Constants;
+using FormBuilderAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Kestrel configuration
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // Add services to the container.
 
@@ -176,6 +180,8 @@ app.UseResponseCaching();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.RemoveInsecureHeaders();
 
 app.Use((context, next) =>
 {
