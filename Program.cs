@@ -8,14 +8,40 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using NSwag.Annotations;
-
 using NSwag.Generation.Processors.Security;
+
+// Logging using statements
+using Serilog;
+using Serilog.Events;
+using Serilog.Templates;
+using Serilog.Templates.Themes;
+
+// local using statements
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
 using FormBuilderAPI.Constants;
 using FormBuilderAPI.Extensions;
 
+// The initial "bootstrap" logger is able to log errors during start-up. It's completely replaced by the
+// logger configured in `AddSerilog()` below, once configuration and dependency-injection have both been
+// set up successfully.
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+Log.Information("Starting up!");
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog to the pipeline
+builder.Services.AddSerilog((services, lc) => lc
+    .ReadFrom.Configuration(builder.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new ExpressionTemplate(
+        // Include trace and span ids when present.
+        "[{@t:HH:mm:ss} {@l:u3}{#if @tr is not null} ({substring(@tr,0,4)}:{substring(@sp,0,4)}){#end}] {@m}\n{@x}",
+        theme: TemplateTheme.Code)));
 
 // Add Kestrel configuration
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
@@ -171,6 +197,11 @@ else
 {
     app.UseExceptionHandler("/error");
 }
+
+// Write streamlined request completion events, instead of the more verbose ones from the framework.
+// To use the default framework request logging instead, remove this line and set the "Microsoft"
+// level in appsettings.json to "Information".
+app.UseSerilogRequestLogging();
 
 
 app.UseHttpsRedirection();

@@ -1,10 +1,12 @@
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using FormBuilderAPI.DTO;
-using FormBuilderAPI.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using FormBuilderAPI.DTO;
+using FormBuilderAPI.Models;
+using Serilog;
 
 namespace FormBuilderAPI.Controllers
 {
@@ -12,24 +14,30 @@ namespace FormBuilderAPI.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
+        private static int _callCount;
+        
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApiUser> _userManager;
         private readonly SignInManager<ApiUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AccountController> _logger;
+        
+        private readonly IDiagnosticContext _diagnosticContext;
 
         public AccountController(
             ApplicationDbContext context,
             UserManager<ApiUser> userManager,
             SignInManager<ApiUser> signInManager,
             IConfiguration configuration,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            IDiagnosticContext diagnosticContext)
         {
             _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _diagnosticContext = diagnosticContext ?? throw new ArgumentNullException(nameof(diagnosticContext));
         }
 
         /// <summary>
@@ -58,6 +66,7 @@ namespace FormBuilderAPI.Controllers
                     if (result.Succeeded)
                     {
                         _logger.LogInformation("User {userName} ({email}) has been created.", newUser.UserName, newUser.Email);
+                        _diagnosticContext.Set("RegisterCallCount", Interlocked.Increment(ref _callCount));
                         return StatusCode(201, $"User {newUser.UserName} has been created.");
                     }
                     else
@@ -131,6 +140,9 @@ namespace FormBuilderAPI.Controllers
                             signingCredentials: signingCredentials);
 
                         var jwtString = new JwtSecurityTokenHandler().WriteToken(jwtObject);
+                        
+                        // log the result
+                        _logger.LogInformation("User {userName} ({email}) has logged in.", user.UserName, user.Email);
 
                         return StatusCode(StatusCodes.Status200OK, jwtString);
                     }

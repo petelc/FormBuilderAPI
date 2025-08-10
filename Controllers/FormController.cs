@@ -26,7 +26,6 @@ public class FormController : ControllerBase
         _context = context;
         _logger = logger;
         _cache = cache;
-
     }
 
 
@@ -43,7 +42,7 @@ public class FormController : ControllerBase
     [SwaggerResponse(StatusCodes.Status501NotImplemented, typeof(ValidationProblemDetails), Description = "Unsupported operation")]
     public async Task<ActionResult<RestDTO<Form[]>>> GetForm([FromQuery] RequestDTO<FormDTO> input)
     {
-        _logger.LogInformation("Hello, world!");
+        _logger.LogInformation("Getting list of Forms");
 
         //_diagnosticContext.Set("IndexCallCount", Interlocked.Increment(ref _callCount));
 
@@ -97,7 +96,7 @@ public class FormController : ControllerBase
             _logger.LogInformation("Cache hit for key {CacheKey}", cacheKey);
         }
 
-
+        _logger.LogInformation("Retrieved {Count} forms based on the provided filter", result.Length);
         return new RestDTO<Form[]>
         {
             Data = result!,
