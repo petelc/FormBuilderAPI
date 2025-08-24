@@ -199,5 +199,5 @@ app.MapControllers().RequireCors("AnyOrigin");
 
 app.Run();
 
-
+public partial class Program { }
 

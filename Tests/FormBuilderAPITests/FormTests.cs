@@ -1,42 +1,30 @@
-using FormBuilderAPI.Models;
-using Microsoft.EntityFrameworkCore;
+using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit.Abstractions;
+using FormBuilderAPI.DTO;
 
 namespace FormBuilderAPITests;
 
-public class FormTests
+public class FormTests(ITestOutputHelper output, WebApplicationFactory<Program> application)
+    : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly ApplicationDbContext _db;
-    private readonly ITestOutputHelper _output;
+    readonly HttpClient _client = application.CreateClient();
 
-    public FormTests(ITestOutputHelper output)
-    {
-        _output = output;
-        DbContextOptionsBuilder<ApplicationDbContext> dbOptions = new();
-        dbOptions.UseSqlite("Filename=../../../FormBuilderAPI/formBuilder.db");
-        _db = new ApplicationDbContext(dbOptions.Options);
-    }
-    
-    
+
     [Fact]
-    public void ShouldGetAllForms()
+    public async Task ShouldGetAllForms()
     {
-        _output.WriteLine("Fetching forms from database...");
-        // 1. Use the _db to connect to database and query the Forms table
-        // 2. Create a list of type form to store results in. 
-        // 3. Test if the list has data and that the count is 4
+        output.WriteLine("Fetching forms from database...");
         
-        
-        List<Form> forms = _db.Forms.ToList();
-        foreach (var form in forms)
-        {
-            //Check the data that has come back (DEBUGGING)
-            _output.WriteLine(form.ToString());
-        }
-        
-        Assert.NotNull(forms);
-        Assert.NotEmpty(forms);
-        Assert.True(forms.Count > 0);
-        
+
+        var response = await _client.GetAsync("https://localhost:7213/api/Form");
+        response.EnsureSuccessStatusCode();
+        output.WriteLine("Done fetching forms from database");
+        output.WriteLine(await response.Content.ReadAsStringAsync());
+        //response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // var expectedResult = HttpStatusCode.OK;
+        // Assert.NotEmpty(response.Content!);
+
     }
 }

@@ -9,7 +9,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using FormBuilderAPI.Constants;
 using NSwag.Annotations;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace FormBuilderAPI.Controllers;
 
