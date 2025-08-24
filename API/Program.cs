@@ -1,18 +1,11 @@
-using NSwag.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using NSwag.Annotations;
-
 using NSwag.Generation.Processors.Security;
 using FormBuilderAPI.Swagger;
 using FormBuilderAPI.Models;
-using FormBuilderAPI.Constants;
 using FormBuilderAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);

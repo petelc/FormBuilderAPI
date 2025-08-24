@@ -1,0 +1,12 @@
+So plan out how this is implemented
+
+We have the DatabaseIntegrationService 
+
+There we reset the db by deleting all data from the tables.
+
+then I should create a class that uses Bogus to create
+Fake Data and returns 
+
+Take fake data and insert into db.
+
+For Fake Data I need to define what the data looks like.
